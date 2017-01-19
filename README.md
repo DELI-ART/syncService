@@ -1,6 +1,8 @@
-SyncService 
+SyncService with RabbitMQ and Symfony 2 
+=====================
 
-Create service configuration 
+1. Create service configuration 
+-----------------------------------
 
     #SyncHandler
     queue_sync_service:
