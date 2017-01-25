@@ -3,8 +3,8 @@ SyncService with RabbitMQ and Symfony 2
 
 1. Create configuration for RabbitMq
 -----------------------------------
-
- producers:
+```
+producers:
         sync_publisher:
             class: SyncBundle\Listeners\QueueSyncProducer
             connection: sync_service
@@ -21,7 +21,7 @@ SyncService with RabbitMQ and Symfony 2
                 name: road
             callback:         queue_sync_consumer
             idle_timeout:     123360
-
+```
 2. Run consumer
 -----------------------------------
 php app/console rabbitmq:consumer -w sync_receiver
