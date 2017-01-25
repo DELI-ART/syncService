@@ -1,6 +1,6 @@
 <?php
 
-namespace HelperBundle\Services\Queue;
+namespace SyncBundle\SyncTypes;
 
 use Symfony\Component\OptionsResolver\OptionsResolver;
 

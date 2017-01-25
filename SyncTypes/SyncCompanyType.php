@@ -1,6 +1,7 @@
 <?php
 
-namespace HelperBundle\Services\Queue;
+namespace SyncBundle\SyncTypes;
+
 
 use CompaniesBundle\Entity\AppCompanies;
 
@@ -71,18 +72,10 @@ class SyncCompanyType extends SyncAbstractType implements SyncInterfaceType
 
         //Добавляем роли
         if (!empty($options['type'])) {
-            foreach ($options['type'] as $roleName) {
-                switch ($roleName) {
-                    case 'shipper':
-                        $company->setRoles(2);
-                        break;
-                    case 'carrier':
-                        $company->setRoles(1);
-                        break;
-                    case 'recipient':
-                        $company->setRoles(3);
-                        break;
-                }
+            $optionsMappingType = array_flip($this->getOptionsMapping(self::ENTITY_NAME.'Type'));
+            foreach ($options['type'] as $role) {
+                if (array_key_exists($role, $optionsMappingType))
+                    $company->setRoles($optionsMappingType[$role]);
             }
         }
         $em->persist($company);
@@ -136,18 +129,10 @@ class SyncCompanyType extends SyncAbstractType implements SyncInterfaceType
                     $company->setAddress($value);
                     break;
                 case 'type':
-                    foreach ($value as $roleName) {
-                        switch ($roleName) {
-                            case 'shipper':
-                                $company->setRoles(2);
-                                break;
-                            case 'carrier':
-                                $company->setRoles(1);
-                                break;
-                            case 'recipient':
-                                $company->setRoles(3);
-                                break;
-                        }
+                    $optionsMappingType = $this->getOptionsMapping(self::ENTITY_NAME.'Type');
+                    foreach ($value as $role) {
+                        if (array_key_exists($role, $optionsMappingType))
+                            $company->setRoles($optionsMappingType[$role]);
                     }
                     break;
             }
@@ -169,9 +154,8 @@ class SyncCompanyType extends SyncAbstractType implements SyncInterfaceType
         //Get options mapping
         $optionsMapping = array_flip($this->getOptionsMapping(self::ENTITY_NAME));
         $data = [];
-        //Data array
         foreach ($optionsMapping as $name => $syncName) {
-            if ($name == 'not_used') {
+            if (strpos($name, 'not_used') !== false) {
                 $data[$syncName] = null;
                 continue;
             }
@@ -180,22 +164,45 @@ class SyncCompanyType extends SyncAbstractType implements SyncInterfaceType
             switch ($name) {
                 case 'countryId':
                     $country = $em->getRepository('HelperBundle:AppCountryList')->find($value);
+                    if (!$country) {
+                        //Default Country if empty
+                        $country = $em->getRepository('HelperBundle:AppCountryList')->find(1);
+                    }
                     $data[$syncName] = $country->getSyncId();
                     break;
                 case 'regionId':
                     $region = $em->getRepository('HelperBundle:AppRegionList')->find($value);
+                    if (!$region) {
+                        //Default Region if empty
+                        $region = $em->getRepository('HelperBundle:AppRegionList')->find(4312);
+                    }
                     $data[$syncName] = $region->getSyncId();
                     break;
                 case 'cityId':
                     $city = $em->getRepository('HelperBundle:AppCityList')->find($value);
+                    //Default City if empty
+                    if (!$city) {
+                        $city = $em->getRepository('HelperBundle:AppCityList')->find(4400);
+                    }
                     $data[$syncName] = $city->getSyncId();
+                    break;
+                case 'roles':
+                    $optionsMappingType = array_flip($this->getOptionsMapping(self::ENTITY_NAME.'Type'));
+                    $newValue = [];
+                    foreach ($value as $role) {
+                        if (array_key_exists($role->getId(), $optionsMappingType))
+                        $newValue[] = $optionsMappingType[$role->getId()];
+                    }
+                    $data[$syncName] = $newValue;
+                    break;
+                case 'createdAt':
+                    $data[$syncName] = date('Y-m-d H:i:s');
                     break;
                 default:
                     $data[$syncName] = $value;
 
             }
         }
-
         return ['identifier' => $company->getInn(), 'data' => $data];
     }
 

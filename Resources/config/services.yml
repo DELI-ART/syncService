@@ -1,0 +1,22 @@
+services:
+    #SyncService
+    queue_sync_service:
+      class: SyncBundle\Services\QueueSyncService
+      arguments: ["@service_container"]
+
+    #SyncConsumer
+    queue_sync_consumer:
+      class: SyncBundle\Listeners\QueueSyncConsumer
+      arguments: ["@service_container"]
+
+    #SyncProducer
+    #queue_sync_producer:
+     #class: SyncBundle\Listeners\QueueSyncProducer
+
+    #SyncEntityListener
+    entity_sync_listener:
+      class: SyncBundle\Listeners\QueueEntitySyncListener
+      arguments: ["@queue_sync_service"]
+      tags:
+          - { name: doctrine.event_listener, event: preUpdate}
+          - { name: doctrine.event_listener, event: onFlush}

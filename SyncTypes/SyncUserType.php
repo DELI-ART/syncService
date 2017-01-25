@@ -1,6 +1,6 @@
 <?php
 
-namespace HelperBundle\Services\Queue;
+namespace SyncBundle\SyncTypes;
 
 use Application\Sonata\UserBundle\Entity\User;
 
@@ -101,9 +101,12 @@ class SyncUserType extends SyncAbstractType implements SyncInterfaceType
         }
         foreach ($data as $name => $value) {
             switch ($name) {
-                case 'name':
+                case 'first_name':
                     $user->setFirstname($value);
-                break;
+                    break;
+                case 'last_name':
+                    $user->setLastname($value);
+                    break;
                 case 'email':
                     //Проверка email
                     $userIsset = $em->getRepository('Application\Sonata\UserBundle\Entity\User')
@@ -115,7 +118,7 @@ class SyncUserType extends SyncAbstractType implements SyncInterfaceType
                     }
                     $user->setEmail($value);
                     $user->setUsername($value);
-                break;
+                    break;
                 case 'phone':
                     $userIsset = $em->getRepository('Application\Sonata\UserBundle\Entity\User')
                         ->findOneBy(array('phone' => $value));
@@ -125,7 +128,7 @@ class SyncUserType extends SyncAbstractType implements SyncInterfaceType
                         return true;
                     }
                     $user->setPhone($value);
-                break;
+                    break;
                 case 'additional_phone':
                     $user->setAdditionalPhone($value);
                     break;
@@ -138,7 +141,7 @@ class SyncUserType extends SyncAbstractType implements SyncInterfaceType
                             $user->getSalt()
                         )
                     );
-                break;
+                    break;
 
             }
         }
@@ -146,6 +149,17 @@ class SyncUserType extends SyncAbstractType implements SyncInterfaceType
 
         return true;
     }
+
+    /**
+     * @param array $data
+     * @param $identifier
+     * @return bool
+     */
+    public function deleted(array $data, $identifier)
+    {
+        return true;
+    }
+
 
     /**
      * @param User $user
@@ -158,7 +172,6 @@ class SyncUserType extends SyncAbstractType implements SyncInterfaceType
     public function getOptionsChangeSet(User $user, \Doctrine\ORM\Event\preUpdateEventArgs $args)
     {
         //Get options mapping
-        $this->addOptionsMapping(self::ENTITY_NAME, ['lastname' => 'lastname']);
         $optionsMapping = array_flip($this->getOptionsMapping(self::ENTITY_NAME));
         //Data array
         $data = [];
@@ -167,14 +180,6 @@ class SyncUserType extends SyncAbstractType implements SyncInterfaceType
                 switch ($name) {
                     case 'password':
                         $values[1] = $user->getSyncHashPassword();
-                        break;
-                    case 'lastname':
-                        $name = 'name';
-                        $values = $user->getFullname();
-                        break;
-                    case 'name':
-                        $name = 'name';
-                        $values = $user->getFullname();
                         break;
 
                 }
@@ -202,10 +207,7 @@ class SyncUserType extends SyncAbstractType implements SyncInterfaceType
             $value = call_user_func([$user, 'get'.ucfirst($name)]);
             switch ($name) {
                 case 'password':
-                    $data[$syncName] = $user->getSyncHashPassword();
-                    break;
-                case 'firstname':
-                    $data[$syncName] = $user->getFullname();
+                    $data[$syncName] = (!$user->getSyncHashPassword()) ?  'no_real_password' : $user->getSyncHashPassword();
                     break;
                 default:
                     $data[$syncName] = $value;
@@ -214,7 +216,5 @@ class SyncUserType extends SyncAbstractType implements SyncInterfaceType
 
         return ['identifier' => $user->getEmail(), 'data' => $data];
     }
-    public function deleted(array $data, $identifier)
-    {
-    }
+
 }

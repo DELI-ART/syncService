@@ -1,6 +1,7 @@
 <?php
 
-namespace HelperBundle\Services\Queue;
+namespace SyncBundle\SyncTypes;
+
 
 /**
  * Interface SyncInterfaceType.

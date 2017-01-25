@@ -1,8 +1,10 @@
 <?php
 
-namespace HelperBundle\Services\Queue;
+namespace SyncBundle\SyncTypes;
 
+use CompaniesBundle\Entity\AppCompanies;
 use Doctrine\Common\Collections\Criteria;
+use CompaniesBundle\Entity\AppCompanyCompanyLink;
 
 /**
  * Class SyncCompanyRelationshipType.
@@ -75,6 +77,20 @@ class SyncCompanyRelationshipType extends SyncAbstractType implements SyncInterf
      */
     public function deleted(array $data, $identifier)
     {
+        $em = $this->container->get('doctrine.orm.entity_manager');
+        $company = $em->getRepository('CompaniesBundle:AppCompanies')->findOneBy(['inn' => $data['company1_inn']]);
+        $companyLink = $em->getRepository('CompaniesBundle:AppCompanies')->findOneBy(['inn' => $data['company2_inn']]);
+        if ($company && $companyLink) {
+            $company->getAppCompaniesPartners()->removeElement($companyLink);
+            $companyLink->getAppCompaniesPartners()->removeElement($company);
+            $em->persist($company);
+            $em->persist($companyLink);
+            $em->flush();
+            return true;
+        } else {
+            $this->writeLog('Error::'.self::ENTITY_NAME.':deleted:company_not_found');
+        }
+
         return true;
     }
 
@@ -87,5 +103,22 @@ class SyncCompanyRelationshipType extends SyncAbstractType implements SyncInterf
     public function updated(array $data, $identifier)
     {
         return true;
+    }
+
+    /**
+     * @param AppCompanyCompanyLink $companyLink
+     * @return array|null
+     */
+    public function getOptionsChangeCreate(AppCompanyCompanyLink $companyLink)
+    {
+        $em = $this->container->get('doctrine.orm.entity_manager');
+        $company = $em->getRepository('CompaniesBundle:AppCompanies')->find($companyLink->getCompanyidLink());
+        $companyLink = $em->getRepository('CompaniesBundle:AppCompanies')->find($companyLink->getCompanyidMain());
+        if ($company->getInn() && $companyLink->getInn()) {
+            return ['identifier' => null, 'data' => ['company1_inn'=>$companyLink->getInn(), 'company2_inn'=>$company->getInn()]];
+        } else {
+            $this->writeLog('Error::'.self::ENTITY_NAME.':create:identifier_is_null');
+            return null;
+        }
     }
 }

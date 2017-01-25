@@ -1,8 +1,10 @@
 <?php
 
-namespace HelperBundle\Services\Queue;
+namespace SyncBundle\SyncTypes;
+
 
 use Application\Sonata\UserBundle\Entity\User;
+
 
 /**
  * Class SyncUserRelationshipType.

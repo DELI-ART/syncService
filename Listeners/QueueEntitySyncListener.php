@@ -1,18 +1,18 @@
 <?php
 
-namespace HelperBundle\Listeners;
+namespace SyncBundle\Listeners;
 /**
  * Class EntitySyncListener
  * @package HelperBundle\Listeners
  */
-class EntitySyncListener
+class QueueEntitySyncListener
 {
     protected $queueSync;
 
     /**
      * @param QueueSyncService $queueSyncService
      */
-    public function __construct(\HelperBundle\Listeners\QueueSyncService $queueSyncService)
+    public function __construct(\SyncBundle\Services\QueueSyncService $queueSyncService)
     {
         $this->queueSyncService = $queueSyncService;
     }
@@ -34,15 +34,18 @@ class EntitySyncListener
                      //CheckLinkUserCompany
                      if ($entity->getAppCompanyUser()) {
                          $data = $syncEntity->getOptionsChangeCreate($entity);
-                         $this->queueSyncService->publish($syncEntity::ENTITY_NAME, 'created', null, $data['data']);
+                         $this->queueSyncService->publishMessage($syncEntity::ENTITY_NAME, 'created', null, $data['data']);
                      }
+                     break;
+                case $entity instanceof \CompaniesBundle\Entity\AppCompanyCompanyLink:
+                    $syncEntity = $this->queueSyncService->factoryCreateType('CompanyRelationship');
                      break;
              }
 
         }
         if ($syncEntity) {
             $data = $syncEntity->getOptionsChangeCreate($entity);
-            if (!empty($data['data'])) $this->queueSyncService->publish($syncEntity::ENTITY_NAME, 'created', $data['identifier'], $data['data']);
+            if (!empty($data['data'])) $this->queueSyncService->publishMessage($syncEntity::ENTITY_NAME, 'created', $data['identifier'], $data['data']);
         }
 
     }
@@ -65,7 +68,7 @@ class EntitySyncListener
         if ($entityName) {
             $syncEntity = $this->queueSyncService->factoryCreateType($entityName);
             $data = $syncEntity->getOptionsChangeSet($entity, $args);
-            if (!empty($data['data'])) $this->queueSyncService->publish($syncEntity::ENTITY_NAME, 'updated', $data['identifier'], $data['data']);
+            if (!empty($data['data'])) $this->queueSyncService->publishMessage($syncEntity::ENTITY_NAME, 'updated', $data['identifier'], $data['data']);
 
         }
     }
